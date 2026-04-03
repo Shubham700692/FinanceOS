@@ -2,9 +2,12 @@ services:
   - type: web
     name: financeos-frontend
     env: static
-    buildCommand: npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://financeos-z3ck.onrender.com/api/v1

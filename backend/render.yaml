@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: financeos-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node src/app.js
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: financeos-super-secret-jwt-key-2024
+      - key: JWT_REFRESH_SECRET
+        value: financeos-refresh-secret-key-2024
+      - key: ALLOWED_ORIGINS
+        value: https://financeos-1.onrender.com
