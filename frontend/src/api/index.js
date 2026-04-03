@@ -6,14 +6,14 @@ const api = axios.create({
   timeout: 10000,
 })
 
-
+// Attach token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-
+// Handle 401 — try refresh, else logout
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -39,7 +39,7 @@ api.interceptors.response.use(
   }
 )
 
-
+// ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   login:    (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
@@ -47,7 +47,7 @@ export const authApi = {
   me:       () => api.get('/auth/me'),
 }
 
-
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 export const dashboardApi = {
   summary:        (params) => api.get('/dashboard/summary', { params }),
   categories:     (params) => api.get('/dashboard/categories', { params }),
@@ -58,7 +58,7 @@ export const dashboardApi = {
   budgetAnalysis: (params) => api.get('/dashboard/budget-analysis', { params }),
 }
 
-
+// ── Records ───────────────────────────────────────────────────────────────────
 export const recordsApi = {
   list:   (params) => api.get('/records', { params }),
   get:    (id) => api.get(`/records/${id}`),
@@ -67,7 +67,7 @@ export const recordsApi = {
   delete: (id) => api.delete(`/records/${id}`),
 }
 
-
+// ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
   list:           (params) => api.get('/users', { params }),
   get:            (id) => api.get(`/users/${id}`),
@@ -77,16 +77,16 @@ export const usersApi = {
   changePassword: (data) => api.post('/users/change-password', data),
 }
 
-
+// ── Budgets ───────────────────────────────────────────────────────────────────
 export const budgetsApi = {
   list:   () => api.get('/budgets'),
   upsert: (data) => api.put('/budgets', data),
   delete: (category) => api.delete(`/budgets/${category}`),
 }
 
-
+// ── Audit ─────────────────────────────────────────────────────────────────────
 export const auditApi = {
   list: (params) => api.get('/audit-logs', { params }),
 }
 
-export default api;
+export default api
