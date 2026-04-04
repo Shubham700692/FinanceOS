@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, TrendingUp, TrendingDown, Zap, BarChart2 } from 'lucide-react'
+import { AlertTriangle, TrendingUp, BarChart2, Zap } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { dashboardApi } from '../api'
-import { PageLoader, Alert, Empty } from '../components/ui'
+import { PageLoader, Alert } from '../components/ui'
 import { formatCurrency, getErrorMessage, CATEGORY_COLORS } from '../utils'
+
+const card = { background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', boxShadow:'0 1px 3px rgb(0 0 0/.06)', padding:'1.5rem' }
 
 export default function Insights() {
   const [data, setData]     = useState(null)
@@ -22,53 +24,43 @@ export default function Insights() {
   const anomalies = data?.anomalies || []
   const topCats   = data?.top_categories || []
   const insights  = data?.spending_insights || []
-
-  const chartData = insights.map(i => ({
-    category: i.category,
-    avg:     i.avg_monthly,
-    current: i.current_month,
-  }))
+  const chartData = insights.map(i => ({ category: i.category, avg: i.avg_monthly, current: i.current_month }))
 
   return (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Spending Insights</h1>
-          <p className="page-subtitle">AI-powered anomaly detection and spending patterns</p>
-        </div>
+    <div>
+      <div style={{ marginBottom:'2rem' }}>
+        <h1 style={{ fontSize:'1.5rem', fontWeight:600, color:'#0f172a', margin:0 }}>Spending Insights</h1>
+        <p style={{ fontSize:'0.875rem', color:'#94a3b8', marginTop:'0.25rem' }}>AI-powered anomaly detection and spending patterns</p>
       </div>
 
-      {error && <Alert type="error" message={error} className="mb-6" />}
+      {error && <Alert type="error" message={error} />}
 
-      {/* Anomaly alerts */}
+      {/* Anomalies */}
       {anomalies.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="h-4 w-4 text-warning" />
-            <h2 className="text-sm font-semibold text-surface-800">Spending Anomalies Detected</h2>
-            <span className="badge-warning">{anomalies.length}</span>
+        <div style={{ marginBottom:'2rem' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1rem' }}>
+            <Zap size={16} color="#d97706" />
+            <h2 style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b', margin:0 }}>Spending Anomalies Detected</h2>
+            <span style={{ background:'#fef3c7', color:'#78350f', fontSize:'0.7rem', fontWeight:600, padding:'0.15rem 0.5rem', borderRadius:'9999px' }}>{anomalies.length}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1rem' }}>
             {anomalies.map(a => (
-              <div key={a.category} className="card p-4 border-l-4 border-warning bg-warning-light/30">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-surface-800 capitalize">{a.category}</p>
-                    <p className="text-xs text-surface-600 mt-0.5">
-                      {a.deviation_percent > 0
-                        ? `Spending is ${a.deviation_percent}% above your average`
-                        : `Spending is ${Math.abs(a.deviation_percent)}% below your average`
-                      }
+              <div key={a.category} style={{ background:'#fffbeb', border:'1px solid #fde68a', borderLeft:'4px solid #f59e0b', borderRadius:'0.75rem', padding:'1rem' }}>
+                <div style={{ display:'flex', gap:'0.75rem' }}>
+                  <AlertTriangle size={16} color="#d97706" style={{ flexShrink:0, marginTop:'2px' }} />
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontSize:'0.875rem', fontWeight:600, color:'#1e293b', textTransform:'capitalize', margin:'0 0 0.25rem' }}>{a.category}</p>
+                    <p style={{ fontSize:'0.75rem', color:'#475569', margin:'0 0 0.75rem' }}>
+                      {a.deviation_percent > 0 ? `Spending is ${a.deviation_percent}% above your average` : `Spending is ${Math.abs(a.deviation_percent)}% below your average`}
                     </p>
-                    <div className="flex gap-4 mt-2">
+                    <div style={{ display:'flex', gap:'1.5rem' }}>
                       <div>
-                        <p className="text-xs text-surface-400">This month</p>
-                        <p className="text-sm font-semibold text-surface-800 font-mono">{formatCurrency(a.current_month)}</p>
+                        <p style={{ fontSize:'0.65rem', color:'#94a3b8', margin:'0 0 0.125rem' }}>This month</p>
+                        <p style={{ fontSize:'0.875rem', fontWeight:600, color:'#1e293b', fontFamily:'monospace', margin:0 }}>{formatCurrency(a.current_month)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-surface-400">Monthly avg</p>
-                        <p className="text-sm font-semibold text-surface-500 font-mono">{formatCurrency(a.avg_monthly)}</p>
+                        <p style={{ fontSize:'0.65rem', color:'#94a3b8', margin:'0 0 0.125rem' }}>Monthly avg</p>
+                        <p style={{ fontSize:'0.875rem', fontWeight:500, color:'#64748b', fontFamily:'monospace', margin:0 }}>{formatCurrency(a.avg_monthly)}</p>
                       </div>
                     </div>
                   </div>
@@ -79,109 +71,99 @@ export default function Insights() {
         </div>
       )}
 
-      {/* Top categories this month */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="h-4 w-4 text-brand-500" />
-            <h2 className="text-sm font-semibold text-surface-800">Top Spending Categories</h2>
+      {/* Top cats + chart */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem', marginBottom:'1.5rem' }}>
+        {/* Top categories */}
+        <div style={card}>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1.25rem' }}>
+            <TrendingUp size={16} color="#4f46e5" />
+            <h2 style={{ fontSize:'0.875rem', fontWeight:600, color:'#1e293b', margin:0 }}>Top Spending Categories</h2>
           </div>
-          {topCats.length === 0 ? (
-            <Empty title="No data" subtitle="Add expense records to see insights" icon={BarChart2} />
-          ) : (
-            <div className="space-y-3">
-              {topCats.map((c, i) => {
-                const maxVal = topCats[0]?.current_month || 1
-                return (
-                  <div key={c.category}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-surface-400 w-4">{i + 1}</span>
-                        <span className="text-xs font-medium text-surface-700 capitalize">{c.category}</span>
+          {topCats.length === 0
+            ? <div style={{ height:120, display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontSize:'0.875rem' }}>No data yet</div>
+            : <div style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
+                {topCats.map((c, i) => {
+                  const max = topCats[0]?.current_month || 1
+                  return (
+                    <div key={c.category}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.375rem' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                          <span style={{ fontSize:'0.7rem', color:'#94a3b8', width:'1rem' }}>{i+1}</span>
+                          <span style={{ fontSize:'0.8rem', fontWeight:500, color:'#334155', textTransform:'capitalize' }}>{c.category}</span>
+                        </div>
+                        <span style={{ fontSize:'0.8rem', fontWeight:600, color:'#1e293b', fontFamily:'monospace' }}>{formatCurrency(c.current_month)}</span>
                       </div>
-                      <span className="text-xs font-semibold font-mono text-surface-800">{formatCurrency(c.current_month)}</span>
+                      <div style={{ height:5, background:'#f1f5f9', borderRadius:9999, overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${(c.current_month/max)*100}%`, background: CATEGORY_COLORS[c.category]||'#4f46e5', borderRadius:9999, transition:'width 0.7s' }} />
+                      </div>
                     </div>
-                    <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{
-                          width: `${(c.current_month / maxVal) * 100}%`,
-                          background: CATEGORY_COLORS[c.category] || '#6366f1'
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+          }
         </div>
 
-        {/* Current vs average */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <BarChart2 className="h-4 w-4 text-brand-500" />
-            <h2 className="text-sm font-semibold text-surface-800">Current vs 6-Month Average</h2>
+        {/* Current vs avg chart */}
+        <div style={card}>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1.25rem' }}>
+            <BarChart2 size={16} color="#4f46e5" />
+            <h2 style={{ fontSize:'0.875rem', fontWeight:600, color:'#1e293b', margin:0 }}>Current vs 6-Month Average</h2>
           </div>
-          {chartData.length === 0 ? (
-            <Empty title="No comparison data" subtitle="Need at least 2 months of data" icon={BarChart2} />
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData.slice(0, 8)} layout="vertical" margin={{ top: 0, right: 10, left: 60, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f3f9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} width={58} />
-                <Tooltip formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="avg"     fill="#e4e8f0" radius={[0, 4, 4, 0]} maxBarSize={10} name="6mo avg" />
-                <Bar dataKey="current" radius={[0, 4, 4, 0]} maxBarSize={10} name="This month">
-                  {chartData.slice(0, 8).map((entry) => (
-                    <Cell key={entry.category} fill={CATEGORY_COLORS[entry.category] || '#6366f1'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          {chartData.length === 0
+            ? <div style={{ height:200, display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontSize:'0.875rem' }}>No comparison data</div>
+            : <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={chartData.slice(0,8)} layout="vertical" margin={{ top:0, right:10, left:70, bottom:0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize:10, fill:'#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="category" tick={{ fontSize:11, fill:'#6b7280' }} axisLine={false} tickLine={false} width={68} />
+                  <Tooltip formatter={v => formatCurrency(v)} />
+                  <Bar dataKey="avg"     fill="#e2e8f0" radius={[0,4,4,0]} maxBarSize={10} name="6mo avg" />
+                  <Bar dataKey="current" radius={[0,4,4,0]} maxBarSize={10} name="This month">
+                    {chartData.slice(0,8).map(e => <Cell key={e.category} fill={CATEGORY_COLORS[e.category]||'#4f46e5'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+          }
         </div>
       </div>
 
-      {/* Full breakdown table */}
-      <div className="table-wrapper">
-        <div className="px-5 py-4 border-b border-surface-100">
-          <h2 className="text-sm font-semibold text-surface-800">Full Spending Breakdown</h2>
+      {/* Full table */}
+      <div style={{ background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', overflow:'hidden', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
+        <div style={{ padding:'1rem 1.25rem', borderBottom:'1px solid #f1f5f9' }}>
+          <h2 style={{ fontSize:'0.875rem', fontWeight:600, color:'#1e293b', margin:0 }}>Full Spending Breakdown</h2>
         </div>
-        {insights.length === 0 ? (
-          <Empty title="No insights yet" subtitle="Add expense records to generate insights" />
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th className="text-right">This Month</th>
-                <th className="text-right">6-Month Avg</th>
-                <th className="text-right">Deviation</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {insights.map(i => (
-                <tr key={i.category}>
-                  <td className="font-medium capitalize">{i.category}</td>
-                  <td className="text-right font-mono text-sm">{formatCurrency(i.current_month)}</td>
-                  <td className="text-right font-mono text-sm text-surface-400">{formatCurrency(i.avg_monthly)}</td>
-                  <td className={`text-right font-medium text-sm ${i.deviation_percent > 0 ? 'text-expense' : 'text-income'}`}>
-                    {i.deviation_percent > 0 ? '+' : ''}{i.deviation_percent}%
-                  </td>
-                  <td>
-                    {i.anomaly
-                      ? <span className="badge-warning"><AlertTriangle className="h-2.5 w-2.5" /> Anomaly</span>
-                      : <span className="badge-income">Normal</span>
-                    }
-                  </td>
+        {insights.length === 0
+          ? <div style={{ padding:'3rem', textAlign:'center', color:'#94a3b8', fontSize:'0.875rem' }}>Add expense records to generate insights</div>
+          : <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.875rem' }}>
+              <thead>
+                <tr style={{ background:'#f8fafc', borderBottom:'1px solid #f1f5f9' }}>
+                  {['Category','This Month','6-Month Avg','Deviation','Status'].map(h => (
+                    <th key={h} style={{ padding:'0.875rem 1.25rem', textAlign:'left', fontSize:'0.7rem', fontWeight:500, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {insights.map(i => (
+                  <tr key={i.category} style={{ borderBottom:'1px solid #f8fafc' }}
+                    onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    <td style={{ padding:'0.875rem 1.25rem', fontWeight:500, textTransform:'capitalize', color:'#1e293b' }}>{i.category}</td>
+                    <td style={{ padding:'0.875rem 1.25rem', fontFamily:'monospace', color:'#1e293b' }}>{formatCurrency(i.current_month)}</td>
+                    <td style={{ padding:'0.875rem 1.25rem', fontFamily:'monospace', color:'#94a3b8' }}>{formatCurrency(i.avg_monthly)}</td>
+                    <td style={{ padding:'0.875rem 1.25rem', fontWeight:500, color: i.deviation_percent > 0 ? '#e11d48' : '#059669' }}>
+                      {i.deviation_percent > 0 ? '+' : ''}{i.deviation_percent}%
+                    </td>
+                    <td style={{ padding:'0.875rem 1.25rem' }}>
+                      {i.anomaly
+                        ? <span style={{ background:'#fef3c7', color:'#78350f', fontSize:'0.7rem', fontWeight:600, padding:'0.2rem 0.6rem', borderRadius:'9999px', display:'inline-flex', alignItems:'center', gap:'0.25rem' }}><AlertTriangle size={10} /> Anomaly</span>
+                        : <span style={{ background:'#f0fdf4', color:'#166534', fontSize:'0.7rem', fontWeight:600, padding:'0.2rem 0.6rem', borderRadius:'9999px' }}>Normal</span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        }
       </div>
     </div>
   )

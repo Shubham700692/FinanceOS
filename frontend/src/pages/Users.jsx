@@ -1,227 +1,212 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Edit2, UserX, Search, Shield } from 'lucide-react'
+import { Edit2, UserX, Search, Shield } from 'lucide-react'
 import { usersApi } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { PageLoader, Alert, Confirm, Modal, Spinner, Empty, Select, Pagination } from '../components/ui'
-import { formatDate, getErrorMessage, ROLE_COLORS, cn } from '../utils'
+import { PageLoader, Alert, Confirm, Modal, Spinner } from '../components/ui'
+import { formatDate, getErrorMessage } from '../utils'
+
+const roleBadge = { admin:{ bg:'#e0e7ff', color:'#3730a3' }, analyst:{ bg:'#dbeafe', color:'#1e40af' }, viewer:{ bg:'#f1f5f9', color:'#475569' } }
+const statusBadge = { active:{ bg:'#f0fdf4', color:'#166534' }, inactive:{ bg:'#f1f5f9', color:'#64748b' } }
 
 export default function Users() {
   const { user: me } = useAuth()
-  const [users, setUsers]       = useState([])
-  const [stats, setStats]       = useState(null)
-  const [meta, setMeta]         = useState({})
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
-  const [success, setSuccess]   = useState('')
-  const [search, setSearch]     = useState('')
-  const [roleFilter, setRoleFilter] = useState('')
+  const [users, setUsers]   = useState([])
+  const [stats, setStats]   = useState(null)
+  const [meta, setMeta]     = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError]   = useState('')
+  const [success, setSuccess] = useState('')
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter]     = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [page, setPage]         = useState(1)
-
+  const [page, setPage] = useState(1)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', role: '', status: '' })
-  const [saving, setSaving]     = useState(false)
+  const [editForm, setEditForm] = useState({ name:'', role:'', status:'' })
+  const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     setLoading(true)
-    try {
-      const params = { page, limit: 15 }
-      if (search) params.search = search
-      if (roleFilter) params.role = roleFilter
-      if (statusFilter) params.status = statusFilter
-      const [u, s] = await Promise.all([usersApi.list(params), usersApi.stats()])
-      setUsers(u.data.data)
-      setMeta(u.data.meta || {})
-      setStats(s.data.data)
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setLoading(false)
-    }
+    const params = { page, limit:15 }
+    if (search) params.search = search
+    if (roleFilter) params.role = roleFilter
+    if (statusFilter) params.status = statusFilter
+    Promise.all([usersApi.list(params), usersApi.stats()])
+      .then(([u, s]) => { setUsers(u.data.data); setMeta(u.data.meta||{}); setStats(s.data.data) })
+      .catch(err => setError(getErrorMessage(err)))
+      .finally(() => setLoading(false))
   }, [page, search, roleFilter, statusFilter])
 
   useEffect(() => { load() }, [load])
 
-  const openEdit = (u) => {
-    setEditTarget(u)
-    setEditForm({ name: u.name, role: u.role, status: u.status })
-  }
-
   const handleEdit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      await usersApi.update(editTarget.id, editForm)
-      setSuccess('User updated')
-      setEditTarget(null)
-      load()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setSaving(false)
-    }
+    e.preventDefault(); setSaving(true)
+    try { await usersApi.update(editTarget.id, editForm); setSuccess('User updated'); setEditTarget(null); load() }
+    catch (err) { setError(getErrorMessage(err)) }
+    finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleteLoading(true)
-    try {
-      await usersApi.delete(deleteTarget.id)
-      setSuccess('User deactivated')
-      setDeleteTarget(null)
-      load()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setDeleteLoading(false)
-    }
+    try { await usersApi.delete(deleteTarget.id); setSuccess('User deactivated'); setDeleteTarget(null); load() }
+    catch (err) { setError(getErrorMessage(err)) }
+    finally { setDeleteLoading(false) }
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">User Management</h1>
-          <p className="page-subtitle">Manage roles, status and access levels</p>
-        </div>
+    <div>
+      <div style={{ marginBottom:'2rem' }}>
+        <h1 style={{ fontSize:'1.5rem', fontWeight:600, color:'#0f172a', margin:0 }}>User Management</h1>
+        <p style={{ fontSize:'0.875rem', color:'#94a3b8', marginTop:'0.25rem' }}>Manage roles, status and access levels</p>
       </div>
 
-      {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   className="mb-4" />}
-      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
+      {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   />}
+      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:'1rem', marginBottom:'1.5rem' }}>
           {[
-            { label: 'Total Users', value: stats.total },
-            { label: 'Active',      value: stats.active },
-            ...stats.byRole.map(r => ({ label: r.role.charAt(0).toUpperCase() + r.role.slice(1) + 's', value: r.count })),
-          ].map(s => (
-            <div key={s.label} className="card px-4 py-3">
-              <p className="text-xl font-bold text-surface-900">{s.value}</p>
-              <p className="text-xs text-surface-400">{s.label}</p>
+            { label:'Total Users', value: stats.total },
+            { label:'Active',      value: stats.active },
+            ...stats.byRole.map(r => ({ label: r.role.charAt(0).toUpperCase()+r.role.slice(1)+'s', value: r.count }))
+          ].map((s,i) => (
+            <div key={i} style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', padding:'1rem 1.25rem', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
+              <p style={{ fontSize:'1.5rem', fontWeight:700, color:'#0f172a', margin:'0 0 0.125rem', fontFamily:'monospace' }}>{s.value}</p>
+              <p style={{ fontSize:'0.75rem', color:'#94a3b8', margin:0 }}>{s.label}</p>
             </div>
           ))}
         </div>
       )}
 
       {/* Filters */}
-      <div className="card p-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-300" />
-            <input className="input pl-9" placeholder="Search name or email…" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
+      <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', padding:'1rem', marginBottom:'1rem', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'0.75rem' }}>
+          <div style={{ position:'relative' }}>
+            <Search size={16} color="#94a3b8" style={{ position:'absolute', left:'0.75rem', top:'50%', transform:'translateY(-50%)' }} />
+            <input className="input" placeholder="Search name or email…" value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }} style={{ paddingLeft:'2.25rem' }} />
           </div>
-          <Select value={roleFilter} onChange={v => { setRoleFilter(v); setPage(1) }}
-            options={[{ value: 'admin', label: 'Admin' }, { value: 'analyst', label: 'Analyst' }, { value: 'viewer', label: 'Viewer' }]}
-            placeholder="All roles" />
-          <Select value={statusFilter} onChange={v => { setStatusFilter(v); setPage(1) }}
-            options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]}
-            placeholder="All statuses" />
+          <select className="input" value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1) }}>
+            <option value="">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="analyst">Analyst</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <select className="input" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1) }}>
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
       </div>
 
-      <div className="table-wrapper">
-        {loading ? <PageLoader /> : users.length === 0 ? (
-          <Empty title="No users found" />
-        ) : (
-          <>
-            <table className="table">
+      {/* Table */}
+      <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', overflow:'hidden', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
+        {loading ? <PageLoader /> : users.length === 0
+          ? <div style={{ padding:'3rem', textAlign:'center', color:'#94a3b8' }}>No users found</div>
+          : <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.875rem' }}>
               <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Last Login</th>
-                  <th>Joined</th>
-                  <th className="text-right">Actions</th>
+                <tr style={{ background:'#f8fafc', borderBottom:'1px solid #f1f5f9' }}>
+                  {['User','Role','Status','Last Login','Joined','Actions'].map(h => (
+                    <th key={h} style={{ padding:'0.875rem 1.25rem', textAlign:'left', fontSize:'0.7rem', fontWeight:500, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
-                  <tr key={u.id}>
-                    <td>
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-brand-700">{u.name?.charAt(0)?.toUpperCase()}</span>
+                {users.map(u => {
+                  const rb = roleBadge[u.role] || roleBadge.viewer
+                  const sb = statusBadge[u.status] || statusBadge.inactive
+                  return (
+                    <tr key={u.id} style={{ borderBottom:'1px solid #f8fafc' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                      <td style={{ padding:'0.875rem 1.25rem' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
+                          <div style={{ width:36, height:36, borderRadius:'50%', background:'#e0e7ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            <span style={{ fontSize:'0.8rem', fontWeight:700, color:'#4338ca' }}>{u.name?.charAt(0)?.toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p style={{ fontSize:'0.875rem', fontWeight:500, color:'#1e293b', margin:0 }}>
+                              {u.name} {u.id === me?.userId && <span style={{ fontSize:'0.7rem', color:'#94a3b8' }}>(you)</span>}
+                            </p>
+                            <p style={{ fontSize:'0.75rem', color:'#94a3b8', margin:0 }}>{u.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-surface-800">{u.name} {u.id === me?.userId && <span className="text-xs text-surface-400">(you)</span>}</p>
-                          <p className="text-xs text-surface-400">{u.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={ROLE_COLORS[u.role]}>
-                        <Shield className="h-2.5 w-2.5" />{u.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={u.status === 'active' ? 'badge-income' : 'badge-neutral'}>{u.status}</span>
-                    </td>
-                    <td className="text-xs text-surface-400">{u.last_login ? formatDate(u.last_login) : 'Never'}</td>
-                    <td className="text-xs text-surface-400">{formatDate(u.created_at)}</td>
-                    <td className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button className="p-1.5 rounded-lg hover:bg-brand-50 text-surface-400 hover:text-brand-600 transition-colors" onClick={() => openEdit(u)}>
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                        {u.id !== me?.userId && (
-                          <button className="p-1.5 rounded-lg hover:bg-expense-light text-surface-400 hover:text-expense transition-colors" onClick={() => setDeleteTarget(u)}>
-                            <UserX className="h-3.5 w-3.5" />
+                      </td>
+                      <td style={{ padding:'0.875rem 1.25rem' }}>
+                        <span style={{ background:rb.bg, color:rb.color, fontSize:'0.7rem', fontWeight:600, padding:'0.2rem 0.6rem', borderRadius:'9999px', display:'inline-flex', alignItems:'center', gap:'0.25rem' }}>
+                          <Shield size={10} />{u.role}
+                        </span>
+                      </td>
+                      <td style={{ padding:'0.875rem 1.25rem' }}>
+                        <span style={{ background:sb.bg, color:sb.color, fontSize:'0.7rem', fontWeight:600, padding:'0.2rem 0.6rem', borderRadius:'9999px' }}>{u.status}</span>
+                      </td>
+                      <td style={{ padding:'0.875rem 1.25rem', fontSize:'0.75rem', color:'#94a3b8' }}>{u.last_login ? formatDate(u.last_login) : 'Never'}</td>
+                      <td style={{ padding:'0.875rem 1.25rem', fontSize:'0.75rem', color:'#94a3b8' }}>{formatDate(u.created_at)}</td>
+                      <td style={{ padding:'0.875rem 1.25rem' }}>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:'0.25rem' }}>
+                          <button style={{ padding:'0.375rem', border:'none', background:'transparent', cursor:'pointer', color:'#94a3b8', borderRadius:'0.5rem', display:'flex' }}
+                            onMouseEnter={e => { e.currentTarget.style.background='#eef2ff'; e.currentTarget.style.color='#4f46e5' }}
+                            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#94a3b8' }}
+                            onClick={() => { setEditTarget(u); setEditForm({ name:u.name, role:u.role, status:u.status }) }}>
+                            <Edit2 size={14} />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {u.id !== me?.userId && (
+                            <button style={{ padding:'0.375rem', border:'none', background:'transparent', cursor:'pointer', color:'#94a3b8', borderRadius:'0.5rem', display:'flex' }}
+                              onMouseEnter={e => { e.currentTarget.style.background='#fff1f2'; e.currentTarget.style.color='#e11d48' }}
+                              onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#94a3b8' }}
+                              onClick={() => setDeleteTarget(u)}>
+                              <UserX size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
-            <Pagination page={page} totalPages={meta.totalPages || 1} onPage={setPage} />
-          </>
+        }
+        {/* Pagination */}
+        {meta.totalPages > 1 && (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1.25rem', borderTop:'1px solid #f1f5f9' }}>
+            <span style={{ fontSize:'0.75rem', color:'#94a3b8' }}>Page {page} of {meta.totalPages}</span>
+            <div style={{ display:'flex', gap:'0.5rem' }}>
+              <button className="btn-secondary btn-sm" disabled={page<=1} onClick={() => setPage(p=>p-1)}>Prev</button>
+              <button className="btn-secondary btn-sm" disabled={page>=meta.totalPages} onClick={() => setPage(p=>p+1)}>Next</button>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Edit modal */}
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Edit User" size="sm">
-        <form onSubmit={handleEdit} className="space-y-4">
-          <div>
-            <label className="label">Name</label>
-            <input className="input" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
-          </div>
+        <form onSubmit={handleEdit} style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
+          <div><label className="label">Name</label><input className="input" value={editForm.name} onChange={e => setEditForm(f=>({...f,name:e.target.value}))} /></div>
           <div>
             <label className="label">Role</label>
-            <select className="input" value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
-              <option value="viewer">Viewer</option>
-              <option value="analyst">Analyst</option>
-              <option value="admin">Admin</option>
+            <select className="input" value={editForm.role} onChange={e => setEditForm(f=>({...f,role:e.target.value}))}>
+              <option value="viewer">Viewer</option><option value="analyst">Analyst</option><option value="admin">Admin</option>
             </select>
           </div>
           <div>
             <label className="label">Status</label>
-            <select className="input" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+            <select className="input" value={editForm.status} onChange={e => setEditForm(f=>({...f,status:e.target.value}))}>
+              <option value="active">Active</option><option value="inactive">Inactive</option>
             </select>
           </div>
-          <div className="flex justify-end gap-3 pt-1">
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:'0.75rem' }}>
             <button type="button" className="btn-secondary" onClick={() => setEditTarget(null)}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? <Spinner size="sm" /> : 'Save Changes'}
-            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? <Spinner size="sm" /> : 'Save Changes'}</button>
           </div>
         </form>
       </Modal>
 
-      <Confirm
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        loading={deleteLoading}
-        title="Deactivate User"
-        message={`Deactivate ${deleteTarget?.name}? They won't be able to log in until reactivated.`}
-      />
+      <Confirm open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
+        loading={deleteLoading} title="Deactivate User"
+        message={`Deactivate ${deleteTarget?.name}? They won't be able to log in until reactivated.`} />
     </div>
   )
 }

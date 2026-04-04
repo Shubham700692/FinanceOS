@@ -2,232 +2,178 @@ import { useEffect, useState } from 'react'
 import { Plus, Trash2, Target, TrendingDown } from 'lucide-react'
 import { budgetsApi, dashboardApi } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { PageLoader, Alert, Confirm, Modal, Spinner, Empty } from '../components/ui'
-import { formatCurrency, CATEGORIES, getErrorMessage, cn } from '../utils'
-
-const STATUS = {
-  over_budget: { label: 'Over Budget', cls: 'badge-expense' },
-  warning:     { label: 'Warning',     cls: 'badge-warning' },
-  on_track:    { label: 'On Track',    cls: 'badge-income'  },
-  no_budget:   { label: 'No Budget',   cls: 'badge-neutral' },
-}
+import { PageLoader, Alert, Confirm, Modal, Spinner } from '../components/ui'
+import { formatCurrency, CATEGORIES, getErrorMessage } from '../utils'
 
 export default function Budgets() {
   const { isAdmin } = useAuth()
   const [analysis, setAnalysis]   = useState([])
-  const [budgets, setBudgets]     = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [success, setSuccess]     = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [form, setForm] = useState({ category: '', monthly_limit: '' })
+  const [form, setForm] = useState({ category:'', monthly_limit:'' })
   const [saving, setSaving] = useState(false)
 
-  const load = async () => {
+  const load = () => {
     setLoading(true)
-    try {
-      const [a, b] = await Promise.all([
-        dashboardApi.budgetAnalysis(),
-        budgetsApi.list(),
-      ])
-      setAnalysis(a.data.data)
-      setBudgets(b.data.data)
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setLoading(false)
-    }
+    Promise.all([dashboardApi.budgetAnalysis(), budgetsApi.list()])
+      .then(([a]) => setAnalysis(a.data.data))
+      .catch(err => setError(getErrorMessage(err)))
+      .finally(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [])
 
   const handleSave = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault(); setSaving(true)
     try {
       await budgetsApi.upsert({ category: form.category, monthly_limit: parseFloat(form.monthly_limit) })
-      setSuccess('Budget saved!')
-      setModalOpen(false)
-      setForm({ category: '', monthly_limit: '' })
-      load()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setSaving(false)
-    }
+      setSuccess('Budget saved!'); setModalOpen(false); setForm({ category:'', monthly_limit:'' }); load()
+    } catch (err) { setError(getErrorMessage(err)) }
+    finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleteLoading(true)
     try {
       await budgetsApi.delete(deleteTarget.category)
-      setSuccess('Budget removed')
-      setDeleteTarget(null)
-      load()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setDeleteLoading(false)
-    }
+      setSuccess('Budget removed'); setDeleteTarget(null); load()
+    } catch (err) { setError(getErrorMessage(err)) }
+    finally { setDeleteLoading(false) }
   }
+
+  const statusColor = (s) => s==='over_budget' ? '#e11d48' : s==='warning' ? '#d97706' : '#059669'
+  const statusBg    = (s) => s==='over_budget' ? '#fff1f2' : s==='warning' ? '#fffbeb' : '#f0fdf4'
+  const statusLabel = (s) => s==='over_budget' ? 'Over Budget' : s==='warning' ? 'Warning' : s==='on_track' ? 'On Track' : 'No Budget'
 
   if (loading) return <PageLoader />
 
-  const overBudget = analysis.filter(a => a.status === 'over_budget').length
-  const onTrack    = analysis.filter(a => a.status === 'on_track').length
+  const overBudget = analysis.filter(a => a.status==='over_budget').length
+  const onTrack    = analysis.filter(a => a.status==='on_track').length
 
   return (
-    <div className="animate-fade-in">
-      <div className="page-header">
+    <div>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'2rem' }}>
         <div>
-          <h1 className="page-title">Budgets</h1>
-          <p className="page-subtitle">Monthly spending limits by category</p>
+          <h1 style={{ fontSize:'1.5rem', fontWeight:600, color:'#0f172a', margin:0 }}>Budgets</h1>
+          <p style={{ fontSize:'0.875rem', color:'#94a3b8', marginTop:'0.25rem' }}>Monthly spending limits by category</p>
         </div>
         {isAdmin && (
-          <button className="btn-primary" onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4" /> Set Budget
+          <button onClick={() => setModalOpen(true)}
+            style={{ display:'inline-flex', alignItems:'center', gap:'0.5rem', background:'#4f46e5', color:'#fff', border:'none', borderRadius:'0.75rem', padding:'0.625rem 1.25rem', fontSize:'0.875rem', fontWeight:500, cursor:'pointer' }}>
+            <Plus size={16} /> Set Budget
           </button>
         )}
       </div>
 
-      {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   className="mb-4" />}
-      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
+      {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   />}
+      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
       {/* Summary pills */}
       {analysis.length > 0 && (
-        <div className="flex gap-3 mb-6 flex-wrap">
-          <div className="card px-4 py-3 flex items-center gap-3">
-            <Target className="h-4 w-4 text-brand-500" />
-            <div>
-              <p className="text-xs text-surface-400">Active Budgets</p>
-              <p className="text-sm font-semibold">{budgets.length}</p>
+        <div style={{ display:'flex', gap:'1rem', marginBottom:'1.5rem', flexWrap:'wrap' }}>
+          {[
+            { icon: <Target size={16} color="#4f46e5" />, bg:'#eef2ff', label:'Active Budgets', value: analysis.filter(a=>a.budget).length },
+            { icon: <span style={{ width:8, height:8, borderRadius:'50%', background: overBudget>0?'#e11d48':'#059669', display:'inline-block' }} />, bg:'#fff', label:'Over Budget', value:`${overBudget} categories` },
+            { icon: <span style={{ width:8, height:8, borderRadius:'50%', background:'#059669', display:'inline-block' }} />, bg:'#fff', label:'On Track', value:`${onTrack} categories` },
+          ].map((s,i) => (
+            <div key={i} style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', padding:'0.875rem 1.25rem', display:'flex', alignItems:'center', gap:'0.75rem', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
+              <div style={{ padding:'0.5rem', background:s.bg, borderRadius:'0.5rem', display:'flex' }}>{s.icon}</div>
+              <div>
+                <p style={{ fontSize:'0.7rem', color:'#94a3b8', margin:0 }}>{s.label}</p>
+                <p style={{ fontSize:'0.875rem', fontWeight:600, color:'#0f172a', margin:0 }}>{s.value}</p>
+              </div>
             </div>
-          </div>
-          <div className="card px-4 py-3 flex items-center gap-3">
-            <div className={cn('w-2 h-2 rounded-full', overBudget > 0 ? 'bg-expense' : 'bg-income')} />
-            <div>
-              <p className="text-xs text-surface-400">Over Budget</p>
-              <p className="text-sm font-semibold">{overBudget} categories</p>
-            </div>
-          </div>
-          <div className="card px-4 py-3 flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-income" />
-            <div>
-              <p className="text-xs text-surface-400">On Track</p>
-              <p className="text-sm font-semibold">{onTrack} categories</p>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Budget analysis cards */}
-      {analysis.length === 0 ? (
-        <div className="card">
-          <Empty title="No budget data" subtitle="Set category budgets to track spending" icon={Target} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {analysis.map(b => {
-            const st = STATUS[b.status] || STATUS.no_budget
-            const pct = Math.min(b.utilization_percent ?? 0, 100)
-            const hasBudget = b.budget !== null
-            return (
-              <div key={b.category} className="card p-5 hover:shadow-card-hover transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="text-sm font-semibold text-surface-800 capitalize">{b.category}</p>
-                    {hasBudget && (
-                      <p className="text-xs text-surface-400 mt-0.5">
-                        Limit: {formatCurrency(b.budget)} / month
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={st.cls}>{st.label}</span>
-                    {isAdmin && hasBudget && (
-                      <button
-                        className="p-1 rounded hover:bg-expense-light text-surface-300 hover:text-expense transition-colors"
-                        onClick={() => setDeleteTarget(b)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {hasBudget && (
-                  <div className="mb-3">
-                    <div className="h-2 bg-surface-100 rounded-full overflow-hidden">
-                      <div
-                        className={cn('h-full rounded-full transition-all duration-500',
-                          b.status === 'over_budget' ? 'bg-expense' :
-                          b.status === 'warning' ? 'bg-warning' : 'bg-income'
-                        )}
-                        style={{ width: `${pct}%` }}
-                      />
+      {/* Budget cards */}
+      {analysis.length === 0
+        ? <div style={{ background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', padding:'4rem', textAlign:'center' }}>
+            <Target size={40} color="#e2e8f0" style={{ margin:'0 auto 1rem' }} />
+            <p style={{ color:'#94a3b8', fontSize:'0.875rem' }}>No budget data. Set category budgets to track spending.</p>
+          </div>
+        : <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'1rem' }}>
+            {analysis.map(b => {
+              const color = statusColor(b.status)
+              const pct   = Math.min(b.utilization_percent ?? 0, 100)
+              return (
+                <div key={b.category} style={{ background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', padding:'1.25rem', boxShadow:'0 1px 3px rgb(0 0 0/.06)', transition:'box-shadow 0.2s' }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'1rem' }}>
+                    <div>
+                      <p style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b', textTransform:'capitalize', margin:0 }}>{b.category}</p>
+                      {b.budget && <p style={{ fontSize:'0.7rem', color:'#94a3b8', margin:'0.25rem 0 0' }}>Limit: {formatCurrency(b.budget)} / month</p>}
                     </div>
-                    <div className="flex justify-between mt-1.5">
-                      <span className="text-xs text-surface-400">{b.utilization_percent}% used</span>
-                      {b.remaining !== null && (
-                        <span className={cn('text-xs font-medium', b.remaining < 0 ? 'text-expense' : 'text-income')}>
-                          {b.remaining >= 0 ? `${formatCurrency(b.remaining)} left` : `${formatCurrency(Math.abs(b.remaining))} over`}
-                        </span>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                      <span style={{ background: statusBg(b.status), color, fontSize:'0.7rem', fontWeight:600, padding:'0.2rem 0.6rem', borderRadius:'9999px' }}>
+                        {statusLabel(b.status)}
+                      </span>
+                      {isAdmin && b.budget && (
+                        <button onClick={() => setDeleteTarget(b)}
+                          style={{ padding:'0.25rem', border:'none', background:'transparent', cursor:'pointer', color:'#cbd5e1', borderRadius:'0.375rem', display:'flex' }}
+                          onMouseEnter={e => { e.currentTarget.style.background='#fff1f2'; e.currentTarget.style.color='#e11d48' }}
+                          onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#cbd5e1' }}>
+                          <Trash2 size={14} />
+                        </button>
                       )}
                     </div>
                   </div>
-                )}
 
-                <div className="flex items-center gap-1.5 mt-2">
-                  <TrendingDown className="h-3.5 w-3.5 text-expense" />
-                  <span className="text-xs text-surface-500">Spent this month:</span>
-                  <span className="text-xs font-semibold text-surface-800 font-mono">{formatCurrency(b.spent)}</span>
+                  {b.budget && (
+                    <div style={{ marginBottom:'0.75rem' }}>
+                      <div style={{ height:6, background:'#f1f5f9', borderRadius:9999, overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${pct}%`, background:color, borderRadius:9999, transition:'width 0.5s' }} />
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginTop:'0.375rem' }}>
+                        <span style={{ fontSize:'0.7rem', color:'#94a3b8' }}>{b.utilization_percent}% used</span>
+                        <span style={{ fontSize:'0.7rem', fontWeight:500, color: b.remaining < 0 ? '#e11d48' : '#059669' }}>
+                          {b.remaining >= 0 ? `${formatCurrency(b.remaining)} left` : `${formatCurrency(Math.abs(b.remaining))} over`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                    <TrendingDown size={14} color="#e11d48" />
+                    <span style={{ fontSize:'0.75rem', color:'#64748b' }}>Spent this month:</span>
+                    <span style={{ fontSize:'0.75rem', fontWeight:600, color:'#1e293b', fontFamily:'monospace' }}>{formatCurrency(b.spent)}</span>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )
+            })}
+          </div>
+      }
 
       {/* Set budget modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Set Monthly Budget" size="sm">
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
           <div>
             <label className="label">Category</label>
-            <select className="input" required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+            <select className="input" required value={form.category} onChange={e => setForm(f => ({ ...f, category:e.target.value }))}>
               <option value="">Select category</option>
-              {CATEGORIES.map(c => (
-                <option key={c} value={c} className="capitalize">{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-              ))}
+              {CATEGORIES.map(c => <option key={c} value={c} style={{ textTransform:'capitalize' }}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
             </select>
           </div>
           <div>
             <label className="label">Monthly Limit (₹)</label>
-            <input
-              type="number" className="input" required min="1" step="1"
-              placeholder="e.g. 15000"
-              value={form.monthly_limit}
-              onChange={e => setForm(f => ({ ...f, monthly_limit: e.target.value }))}
-            />
+            <input type="number" className="input" required min="1" step="1" placeholder="e.g. 15000"
+              value={form.monthly_limit} onChange={e => setForm(f => ({ ...f, monthly_limit:e.target.value }))} />
           </div>
-          <div className="flex justify-end gap-3 pt-1">
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:'0.75rem', paddingTop:'0.25rem' }}>
             <button type="button" className="btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? <Spinner size="sm" /> : 'Save Budget'}
-            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? <Spinner size="sm" /> : 'Save Budget'}</button>
           </div>
         </form>
       </Modal>
 
-      <Confirm
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        loading={deleteLoading}
-        title="Remove Budget"
-        message={`Remove the budget for "${deleteTarget?.category}"?`}
-      />
+      <Confirm open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
+        loading={deleteLoading} title="Remove Budget"
+        message={`Remove the budget for "${deleteTarget?.category}"?`} />
     </div>
   )
 }
