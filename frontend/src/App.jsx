@@ -14,7 +14,7 @@ import { Spinner } from './components/ui'
 
 const ROLE_LEVELS = { viewer: 1, analyst: 2, admin: 3 }
 
-// Route guard — redirects to login if not authenticated, or to / if insufficient role
+
 function Protected({ children, minRole = 'viewer' }) {
   const { user, loading } = useAuth()
   if (loading) return (
@@ -27,7 +27,7 @@ function Protected({ children, minRole = 'viewer' }) {
   return children
 }
 
-// Redirect logged-in users away from auth pages
+
 function AuthRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
@@ -38,11 +38,11 @@ function AuthRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
+      
       <Route path="/login"    element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="/register" element={<AuthRoute><Register /></AuthRoute>} />
 
-      {/* Protected — inside layout */}
+      
       <Route element={<Protected><Layout /></Protected>}>
         <Route index            element={<Dashboard />} />
         <Route path="records"   element={<Records />} />
@@ -53,7 +53,7 @@ function AppRoutes() {
         <Route path="audit"     element={<Protected minRole="admin"><AuditLog /></Protected>} />
       </Route>
 
-      {/* Catch-all */}
+      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

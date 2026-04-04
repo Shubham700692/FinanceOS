@@ -64,7 +64,6 @@ export default function Users() {
       {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
-      {/* Stats */}
       {stats && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:'1rem', marginBottom:'1.5rem' }}>
           {[
@@ -80,7 +79,6 @@ export default function Users() {
         </div>
       )}
 
-      {/* Filters */}
       <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', padding:'1rem', marginBottom:'1rem', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
         <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'0.75rem' }}>
           <div style={{ position:'relative' }}>
@@ -102,7 +100,6 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Table */}
       <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', overflow:'hidden', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
         {loading ? <PageLoader /> : users.length === 0
           ? <div style={{ padding:'3rem', textAlign:'center', color:'#94a3b8' }}>No users found</div>
@@ -169,7 +166,6 @@ export default function Users() {
               </tbody>
             </table>
         }
-        {/* Pagination */}
         {meta.totalPages > 1 && (
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1.25rem', borderTop:'1px solid #f1f5f9' }}>
             <span style={{ fontSize:'0.75rem', color:'#94a3b8' }}>Page {page} of {meta.totalPages}</span>
@@ -181,7 +177,6 @@ export default function Users() {
         )}
       </div>
 
-      {/* Edit modal */}
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Edit User" size="sm">
         <form onSubmit={handleEdit} style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
           <div><label className="label">Name</label><input className="input" value={editForm.name} onChange={e => setEditForm(f=>({...f,name:e.target.value}))} /></div>

@@ -35,7 +35,7 @@ export default function Insights() {
 
       {error && <Alert type="error" message={error} />}
 
-      {/* Anomalies */}
+  
       {anomalies.length > 0 && (
         <div style={{ marginBottom:'2rem' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1rem' }}>
@@ -71,9 +71,9 @@ export default function Insights() {
         </div>
       )}
 
-      {/* Top cats + chart */}
+    
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem', marginBottom:'1.5rem' }}>
-        {/* Top categories */}
+      
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1.25rem' }}>
             <TrendingUp size={16} color="#4f46e5" />
@@ -103,7 +103,7 @@ export default function Insights() {
           }
         </div>
 
-        {/* Current vs avg chart */}
+      
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1.25rem' }}>
             <BarChart2 size={16} color="#4f46e5" />
@@ -127,7 +127,7 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* Full table */}
+      
       <div style={{ background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', overflow:'hidden', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
         <div style={{ padding:'1rem 1.25rem', borderBottom:'1px solid #f1f5f9' }}>
           <h2 style={{ fontSize:'0.875rem', fontWeight:600, color:'#1e293b', margin:0 }}>Full Spending Breakdown</h2>

@@ -60,7 +60,6 @@ export default function Records() {
       {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
-      {/* Filters */}
       <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', padding:'1rem', marginBottom:'1rem', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
         <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr', gap:'0.75rem' }}>
           <div style={{ position:'relative' }}>
@@ -88,7 +87,6 @@ export default function Records() {
         )}
       </div>
 
-      {/* Sort row */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem', padding:'0 0.25rem' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
           <span style={{ fontSize:'0.75rem', color:'#94a3b8' }}>Sort by:</span>
@@ -108,7 +106,7 @@ export default function Records() {
         </select>
       </div>
 
-      {/* Table */}
+      
       <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:'1rem', overflow:'hidden', boxShadow:'0 1px 3px rgb(0 0 0/.06)' }}>
         {loading ? <PageLoader /> : records.length === 0
           ? <div style={{ padding:'4rem', textAlign:'center', color:'#94a3b8' }}>No records found{hasFilters ? ' — try adjusting your filters' : ''}</div>

@@ -56,7 +56,7 @@ export default function Budgets() {
 
   return (
     <div>
-      {/* Header */}
+   
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'2rem' }}>
         <div>
           <h1 style={{ fontSize:'1.5rem', fontWeight:600, color:'#0f172a', margin:0 }}>Budgets</h1>
@@ -73,7 +73,7 @@ export default function Budgets() {
       {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
-      {/* Summary pills */}
+     
       {analysis.length > 0 && (
         <div style={{ display:'flex', gap:'1rem', marginBottom:'1.5rem', flexWrap:'wrap' }}>
           {[
@@ -92,7 +92,7 @@ export default function Budgets() {
         </div>
       )}
 
-      {/* Budget cards */}
+      
       {analysis.length === 0
         ? <div style={{ background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', padding:'4rem', textAlign:'center' }}>
             <Target size={40} color="#e2e8f0" style={{ margin:'0 auto 1rem' }} />
@@ -149,7 +149,6 @@ export default function Budgets() {
           </div>
       }
 
-      {/* Set budget modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Set Monthly Budget" size="sm">
         <form onSubmit={handleSave} style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
           <div>

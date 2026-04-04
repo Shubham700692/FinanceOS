@@ -68,7 +68,7 @@ export default function Analytics() {
 
       {error && <Alert type="error" message={error} />}
 
-      {/* Monthly bar chart */}
+     
       <div style={card}>
         <h2 style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b', margin:'0 0 0.25rem' }}>Monthly Income vs Expenses</h2>
         <p style={{ fontSize:'0.75rem', color:'#94a3b8', margin:'0 0 1.25rem' }}>Side by side comparison</p>
@@ -85,22 +85,26 @@ export default function Analytics() {
         </ResponsiveContainer>
       </div>
 
-      {/* Net balance line chart */}
+      
       <div style={card}>
-        <h2 style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b', margin:'0 0 0.25rem' }}>Net Balance Trend</h2>
+        <h2 style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b',
+           margin:'0 0 0.25rem' }}>Net Balance Trend</h2>
         <p style={{ fontSize:'0.75rem', color:'#94a3b8', margin:'0 0 1.25rem' }}>Monthly net (income − expenses)</p>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={monthly}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="month" tick={{ fontSize:11, fill:'#94a3b8' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize:11, fill:'#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+            <XAxis dataKey="month" tick={{ fontSize:11, fill:'#94a3b8'
+
+             }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize:11, fill:'#94a3b8' }} axisLine={false} tickLine={false} 
+            tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
             <Tooltip content={<Tip />} />
             <Line type="monotone" dataKey="net" stroke="#4f46e5" strokeWidth={2.5} dot={{ r:4, fill:'#4f46e5' }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Weekly area */}
+      
       <div style={card}>
         <h2 style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b', margin:'0 0 0.25rem' }}>Weekly Activity</h2>
         <p style={{ fontSize:'0.75rem', color:'#94a3b8', margin:'0 0 1.25rem' }}>Last 8 weeks</p>
@@ -120,7 +124,7 @@ export default function Analytics() {
         </ResponsiveContainer>
       </div>
 
-      {/* Category breakdown */}
+  
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
         <h2 style={{ fontSize:'0.9rem', fontWeight:600, color:'#1e293b', margin:0 }}>Category Breakdown</h2>
         <select value={catType} onChange={e => setCatType(e.target.value)}
