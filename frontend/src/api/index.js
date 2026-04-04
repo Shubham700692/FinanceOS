@@ -1,9 +1,11 @@
 import axios from 'axios'
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
+  timeout: 60000, // 60s — Render free tier can take 30-50s to wake up
 })
 
 // Attach token to every request
@@ -13,19 +15,30 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle 401 — try refresh, else logout
+// Auto-retry once on timeout, then handle 401
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config
+
+    // Retry once on timeout or network error (server was sleeping)
+    if (
+      !original._retry &&
+      (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || !error.response)
+    ) {
+      original._retry = true
+      original.timeout = 60000
+      await new Promise(r => setTimeout(r, 2000)) // wait 2s then retry
+      return api(original)
+    }
+
+    // Handle 401 — try refresh token
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
         const refreshToken = localStorage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
-        const { data } = await axios.post('/api/v1/auth/refresh', { refreshToken }, {
-          baseURL: window.location.origin,
-        })
+        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken }, { timeout: 60000 })
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
         original.headers.Authorization = `Bearer ${data.data.accessToken}`
@@ -35,6 +48,7 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     }
+
     return Promise.reject(error)
   }
 )
