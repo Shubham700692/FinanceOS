@@ -33,7 +33,7 @@ npm install
 npm run dev         # Runs on http://localhost:5173
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](https://financeos-1.onrender.com) in your browser.
 
 ---
 
